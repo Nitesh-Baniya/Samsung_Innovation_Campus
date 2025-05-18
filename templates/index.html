@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deterministic AI Chatbot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <form id="chatForm">
+            <label for="type">Sentence Type:</label>
+            <select id="type" name="type">
+                <option value="full_sentences">A + S + Ad + V + A + O</option>
+                <option value="svo">S + V + O</option>
+                <option value="sv">S + V</option>
+            </select>
+            <br>
+            <label for="question">Ask a question:</label>
+            <input type="text" id="question" name="question" placeholder="What does Ram do?" required>
+            <button type="submit">Submit</button>
+        </form>
+
+        <div id="results" aria-live="polite"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.getElementById("chatForm");
+        const submitBtn = form.querySelector("button");
+        const questionInput = document.getElementById("question");
+        const typeSelect = document.getElementById("type");
+        const resultsDiv = document.getElementById("results");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const question = questionInput.value.trim();
+          const type = typeSelect.value;
+
+          if (!question) {
+            resultsDiv.textContent = "Please enter a question.";
+            return;
+          }
+
+          submitBtn.disabled = true;
+          resultsDiv.textContent = "Processing...";
+
+          try {
+            const response = await fetch("/ask", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ question, type }),
+            });
+
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+              resultsDiv.innerHTML =
+                "<h4>Results:</h4><ul>" +
+                data.results.map((r) => `<li>${r}</li>`).join("") +
+                "</ul>";
+            } else {
+              resultsDiv.textContent = "No results returned.";
+            }
+          } catch (error) {
+            resultsDiv.textContent = "Error communicating with server.";
+            console.error(error);
+          } finally {
+            submitBtn.disabled = false;
+          }
+        });
+      });
+    </script>
+</body>
+</html>
