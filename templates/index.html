@@ -1,74 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Deterministic AI Chatbot</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <title>Deterministic AI Chatbot</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <form id="chatForm">
-            <label for="type">Sentence Type:</label>
-            <select id="type" name="type">
-                <option value="full_sentences">A + S + Ad + V + A + O</option>
-                <option value="svo">S + V + O</option>
-                <option value="sv">S + V</option>
-            </select>
-            <br>
-            <label for="question">Ask a question:</label>
-            <input type="text" id="question" name="question" placeholder="What does Ram do?" required>
-            <button type="submit">Submit</button>
-        </form>
-
-        <div id="results" aria-live="polite"></div>
+  <div class="container">
+    <div class="theme-toggle">
+      <label class="switch">
+        <input type="checkbox" id="themeSwitch">
+        <span class="slider round"></span>
+      </label>
+      <span id="themeLabel">Light Mode</span>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById("chatForm");
-        const submitBtn = form.querySelector("button");
-        const questionInput = document.getElementById("question");
-        const typeSelect = document.getElementById("type");
-        const resultsDiv = document.getElementById("results");
+    <h2> Deterministic AI Chatbot</h2>
 
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
+    <form id="chatForm">
+      <label for="type">Sentence Type</label>
+      <select id="type" name="type">
+        <option value="full_sentences">A + S + Ad + V + A + O</option>
+        <option value="svo">S + V + O</option>
+        <option value="sv">S + V</option>
+      </select>
 
-          const question = questionInput.value.trim();
-          const type = typeSelect.value;
+      <label for="question">Ask a Question</label>
+      <input type="text" id="question" name="question" placeholder="What does Ram do?" required>
 
-          if (!question) {
-            resultsDiv.textContent = "Please enter a question.";
-            return;
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="results" aria-live="polite"></div>
+  </div>
+
+  <script>
+    // Theme toggle
+    const switchToggle = document.getElementById('themeSwitch');
+    const body = document.body;
+    const themeLabel = document.getElementById('themeLabel');
+
+    switchToggle.addEventListener('change', () => {
+      body.classList.toggle('dark');
+      themeLabel.textContent = body.classList.contains('dark') ? 'Dark Mode' : 'Light Mode';
+    });
+
+    // Chatbot logic
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("chatForm");
+      const submitBtn = form.querySelector("button");
+      const questionInput = document.getElementById("question");
+      const typeSelect = document.getElementById("type");
+      const resultsDiv = document.getElementById("results");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const question = questionInput.value.trim();
+        const type = typeSelect.value;
+
+        if (!question) {
+          resultsDiv.textContent = "Please enter a question.";
+          return;
+        }
+
+        submitBtn.disabled = true;
+        resultsDiv.innerHTML = "<p class='loading'>Processing...</p>";
+
+        try {
+          const response = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question, type }),
+          });
+
+          const data = await response.json();
+
+          if (data.results && data.results.length > 0) {
+            resultsDiv.innerHTML =
+              "<h4>Results:</h4><ul>" +
+              data.results.map((r) => `<li>${r}</li>`).join("") +
+              "</ul>";
+          } else {
+            resultsDiv.textContent = "No results returned.";
           }
-
-          submitBtn.disabled = true;
-          resultsDiv.textContent = "Processing...";
-
-          try {
-            const response = await fetch("/ask", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ question, type }),
-            });
-
-            const data = await response.json();
-
-            if (data.results && data.results.length > 0) {
-              resultsDiv.innerHTML =
-                "<h4>Results:</h4><ul>" +
-                data.results.map((r) => `<li>${r}</li>`).join("") +
-                "</ul>";
-            } else {
-              resultsDiv.textContent = "No results returned.";
-            }
-          } catch (error) {
-            resultsDiv.textContent = "Error communicating with server.";
-            console.error(error);
-          } finally {
-            submitBtn.disabled = false;
-          }
-        });
+        } catch (error) {
+          resultsDiv.textContent = "Error communicating with server.";
+          console.error(error);
+        } finally {
+          submitBtn.disabled = false;
+        }
       });
-    </script>
+    });
+  </script>
 </body>
 </html>
+
+
